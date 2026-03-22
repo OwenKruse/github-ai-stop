@@ -4,7 +4,7 @@ import {
   contributors,
   activityEvents,
 } from "@/lib/db/schema";
-import { desc, eq, sql, count, avg, and, gte } from "drizzle-orm";
+import { desc, eq, sql, count, avg, and, gte, like } from "drizzle-orm";
 
 // ---------- Repositories ----------
 
@@ -289,6 +289,28 @@ export async function getTrustScoreDistribution() {
   );
 
   return results;
+}
+
+export async function searchContributors(query: string) {
+  const rows = await db
+    .select()
+    .from(contributors)
+    .where(
+      and(
+        like(contributors.username, `%${query}%`),
+        eq(contributors.isWhitelisted, false)
+      )
+    )
+    .orderBy(desc(contributors.trustScore))
+    .limit(10);
+
+  return rows.map((c) => ({
+    ...c,
+    id: String(c.id),
+    mergeRate: c.totalPRs > 0
+      ? Math.round(((c.mergedPRs / c.totalPRs) * 100) * 10) / 10
+      : 0,
+  }));
 }
 
 export async function getWhitelistedContributors() {

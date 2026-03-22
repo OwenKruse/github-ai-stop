@@ -1,3 +1,4 @@
+import { ExternalLink } from "lucide-react"
 import { ContributorAvatar } from "@/components/contributor-avatar"
 import { TrustScoreBadge } from "@/components/trust-score-badge"
 
@@ -31,7 +32,7 @@ function ActionBadge({ action }: { action: string }) {
   )
 }
 
-export function RepoPRList({ events }: { events: PREvent[] }) {
+export function RepoPRList({ events, repoFullName }: { events: PREvent[]; repoFullName: string }) {
   return (
     <div>
       <div className="mb-3">
@@ -42,14 +43,23 @@ export function RepoPRList({ events }: { events: PREvent[] }) {
         {events.length > 0 ? (
           <div className="divide-y divide-border">
             {events.map((event) => (
-              <div key={event.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/40 transition-colors">
+              <a
+                key={event.id}
+                href={`https://github.com/${repoFullName}/pull/${event.prNumber}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/40 transition-colors group"
+              >
                 <ContributorAvatar
                   username={event.contributor.username}
                   avatarUrl={event.contributor.avatarUrl}
                   size="sm"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground truncate">{event.prTitle}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm text-foreground truncate group-hover:text-notion-blue transition-colors">{event.prTitle}</p>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  </div>
                   <p className="text-xs text-muted-foreground font-mono">#{event.prNumber}</p>
                 </div>
                 <ActionBadge action={event.action} />
@@ -60,7 +70,7 @@ export function RepoPRList({ events }: { events: PREvent[] }) {
                     day: "numeric",
                   })}
                 </span>
-              </div>
+              </a>
             ))}
           </div>
         ) : (

@@ -1,11 +1,19 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ContributorAvatar } from "@/components/contributor-avatar"
 import { TrustScoreBadge } from "@/components/trust-score-badge"
-import { Search, ArrowUpDown, CheckCircle2, XCircle, ExternalLink } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import { Search, ArrowUpDown, CheckCircle2, XCircle, ExternalLink, MoreHorizontal, ShieldCheck, ShieldBan, ShieldOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ContributorRow {
@@ -24,10 +32,57 @@ interface ContributorRow {
 
 type SortKey = "trustScore" | "totalPRs" | "mergeRate" | "reposActiveIn" | "lastActiveAt" | "username"
 
-export function ContributorsTable({ contributors }: { contributors: ContributorRow[] }) {
+export function ContributorsTable({ contributors: initialContributors }: { contributors: ContributorRow[] }) {
+  const router = useRouter()
+  const [contributors, setContributors] = useState(initialContributors)
   const [searchQuery, setSearchQuery] = useState("")
   const [sortKey, setSortKey] = useState<SortKey>("trustScore")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
+  const [updating, setUpdating] = useState<string | null>(null)
+
+  async function handleToggleWhitelist(contributor: ContributorRow) {
+    const newValue = !contributor.isWhitelisted
+    setUpdating(contributor.id)
+    setContributors((prev) =>
+      prev.map((c) =>
+        c.id === contributor.id
+          ? { ...c, isWhitelisted: newValue, isBlocked: newValue ? false : c.isBlocked, trustScore: newValue ? 100 : c.trustScore }
+          : c
+      )
+    )
+    try {
+      await fetch(`/api/contributors/${contributor.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isWhitelisted: newValue }),
+      })
+      router.refresh()
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  async function handleToggleBlock(contributor: ContributorRow) {
+    const newValue = !contributor.isBlocked
+    setUpdating(contributor.id)
+    setContributors((prev) =>
+      prev.map((c) =>
+        c.id === contributor.id
+          ? { ...c, isBlocked: newValue, isWhitelisted: newValue ? false : c.isWhitelisted, trustScore: newValue ? 0 : c.trustScore }
+          : c
+      )
+    )
+    try {
+      await fetch(`/api/contributors/${contributor.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isBlocked: newValue }),
+      })
+      router.refresh()
+    } finally {
+      setUpdating(null)
+    }
+  }
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -168,15 +223,48 @@ export function ContributorsTable({ contributors }: { contributors: ContributorR
                 )}
               </div>
               <div className="flex justify-end">
-                <a
-                  href={`https://github.com/${contributor.username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground">
-                    <ExternalLink className="h-3 w-3" />
-                  </Button>
-                </a>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      disabled={updating === contributor.id}
+                    >
+                      <MoreHorizontal className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={() => handleToggleWhitelist(contributor)}>
+                      {contributor.isWhitelisted ? (
+                        <><ShieldOff className="h-4 w-4" /> Remove Whitelist</>
+                      ) : (
+                        <><ShieldCheck className="h-4 w-4" /> Whitelist</>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant={contributor.isBlocked ? "default" : "destructive"}
+                      onClick={() => handleToggleBlock(contributor)}
+                    >
+                      {contributor.isBlocked ? (
+                        <><ShieldOff className="h-4 w-4" /> Unblock</>
+                      ) : (
+                        <><ShieldBan className="h-4 w-4" /> Block</>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <a
+                        href={`https://github.com/${contributor.username}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        View on GitHub
+                      </a>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           ))}

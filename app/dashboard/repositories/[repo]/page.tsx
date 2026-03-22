@@ -52,7 +52,7 @@ export default async function RepositoryDetailPage({ params }: { params: Promise
 
       <RepoWhitelist contributors={whitelisted} />
 
-      <RepoPRList events={recentPRs} />
+      <RepoPRList events={recentPRs} repoFullName={repository.fullName} />
     </div>
   )
 }
