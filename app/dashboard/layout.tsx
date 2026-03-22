@@ -132,13 +132,17 @@ function DashboardSidebar({ collapsed, onToggle }: { collapsed: boolean; onToggl
               <p className="text-xs text-muted-foreground">{session?.user?.email}</p>
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Users className="mr-2 h-4 w-4" />
-              Profile
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/profile">
+                <Users className="mr-2 h-4 w-4" />
+                Profile
+              </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/settings">
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

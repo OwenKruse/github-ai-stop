@@ -250,6 +250,15 @@ export default function LandingPage() {
                 How it works
               </Button>
             </Link>
+            <Link href="/lookup">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Lookup
+              </Button>
+            </Link>
             <Link href="/login">
               <Button
                 variant="ghost"

@@ -102,6 +102,7 @@ export const contributors = sqliteTable("contributors", {
     .notNull()
     .default(false),
   lastActiveAt: text("last_active_at"),
+  lastGithubSyncAt: text("last_github_sync_at"),
   createdAt: text("created_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),

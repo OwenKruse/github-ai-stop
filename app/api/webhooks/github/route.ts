@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and, gte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { repositories, contributors, activityEvents } from "@/lib/db/schema";
 import { computeTrustScore } from "@/lib/scoring";
 import { enforce } from "@/lib/github/enforce";
+import { fetchGitHubContributorStats } from "@/lib/github/fetch-contributor-stats";
 
 async function verifySignature(
   body: string,
@@ -111,22 +112,60 @@ export async function POST(req: NextRequest) {
     })
     .returning();
 
-  // --- Compute trust score ---
+  // --- Auto-whitelist repo owners ---
+  const isRepoOwner =
+    repo.owner.type === "User" && sender.login === repo.owner.login;
+
+  if (isRepoOwner && !dbContributor.isWhitelisted) {
+    await db
+      .update(contributors)
+      .set({
+        isWhitelisted: true,
+        trustScore: 100,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(contributors.id, dbContributor.id));
+    dbContributor.isWhitelisted = true;
+  }
+
+  // --- Compute trust score (enriched with GitHub-wide data) ---
   const reposActiveIn = await db
     .select({ count: sql<number>`count(distinct ${activityEvents.repositoryId})` })
     .from(activityEvents)
     .where(eq(activityEvents.contributorId, dbContributor.id));
 
+  const twentyFourHoursAgo = new Date(
+    Date.now() - 24 * 60 * 60 * 1000
+  ).toISOString();
+
   const recentEvents = await db
     .select({ count: sql<number>`count(*)` })
     .from(activityEvents)
-    .where(eq(activityEvents.contributorId, dbContributor.id));
+    .where(
+      and(
+        eq(activityEvents.contributorId, dbContributor.id),
+        gte(activityEvents.timestamp, twentyFourHoursAgo)
+      )
+    );
+
+  let totalPRs = dbContributor.totalPRs;
+  let mergedPRs = dbContributor.mergedPRs;
+  let crossRepoCount = reposActiveIn[0]?.count ?? 0;
+
+  const ghStats = await fetchGitHubContributorStats(sender.login).catch(
+    () => null
+  );
+  if (ghStats) {
+    totalPRs = Math.max(totalPRs, ghStats.totalPRs);
+    mergedPRs = Math.max(mergedPRs, ghStats.mergedPRs);
+    crossRepoCount = Math.max(crossRepoCount, ghStats.reposActiveIn);
+  }
 
   const trustScore = computeTrustScore({
-    totalPRs: dbContributor.totalPRs,
-    mergedPRs: dbContributor.mergedPRs,
+    totalPRs,
+    mergedPRs,
     accountAgeYears: dbContributor.accountAge,
-    reposActiveIn: reposActiveIn[0]?.count ?? 0,
+    reposActiveIn: crossRepoCount,
     recentEventCount: recentEvents[0]?.count ?? 0,
     isWhitelisted: dbContributor.isWhitelisted,
     isBlocked: dbContributor.isBlocked,
@@ -134,7 +173,11 @@ export async function POST(req: NextRequest) {
 
   await db
     .update(contributors)
-    .set({ trustScore, updatedAt: new Date().toISOString() })
+    .set({
+      trustScore,
+      lastGithubSyncAt: ghStats ? new Date().toISOString() : undefined,
+      updatedAt: new Date().toISOString(),
+    })
     .where(eq(contributors.id, dbContributor.id));
 
   // --- Determine action ---

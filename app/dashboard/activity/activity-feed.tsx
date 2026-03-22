@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { ContributorAvatar } from "@/components/contributor-avatar"
 import { TrustScoreBadge } from "@/components/trust-score-badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { DateRangeCalendar, type DateRange } from "@/components/date-range-calendar"
 import { Calendar, Download } from "lucide-react"
 
 interface ActivityEventRow {
@@ -43,6 +46,13 @@ function ActionBadge({ action }: { action: string }) {
   )
 }
 
+const actionLabels: Record<string, string> = {
+  labeled_trusted: "Trusted",
+  flagged: "Flagged",
+  auto_closed: "Auto-Closed",
+  whitelisted: "Whitelisted",
+}
+
 function getActionDescription(action: string) {
   switch (action) {
     case "labeled_trusted":
@@ -58,6 +68,37 @@ function getActionDescription(action: string) {
   }
 }
 
+function escapeCsvField(field: string): string {
+  if (field.includes(",") || field.includes('"') || field.includes("\n")) {
+    return `"${field.replace(/"/g, '""')}"`
+  }
+  return field
+}
+
+function downloadCsv(rows: ActivityEventRow[]) {
+  const headers = ["Timestamp", "Contributor", "Repository", "PR Number", "PR Title", "Action", "Trust Score"]
+  const csvRows = rows.map((row) => [
+    new Date(row.timestamp).toISOString(),
+    row.contributor.username,
+    `${row.repository.owner}/${row.repository.name}`,
+    String(row.prNumber),
+    escapeCsvField(row.prTitle),
+    actionLabels[row.action] ?? row.action,
+    String(row.trustScore),
+  ])
+
+  const csv = [headers.join(","), ...csvRows.map((r) => r.join(","))].join("\n")
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `activity-export-${format(new Date(), "yyyy-MM-dd")}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 export function ActivityFeed({
   activity,
   repoOptions,
@@ -67,21 +108,47 @@ export function ActivityFeed({
 }) {
   const [filterRepo, setFilterRepo] = useState<string>("all")
   const [filterAction, setFilterAction] = useState<string>("all")
+  const [dateRange, setDateRange] = useState<DateRange | null>(null)
 
-  const filtered = activity.filter((event) => {
-    if (filterRepo !== "all" && `${event.repository.owner}/${event.repository.name}` !== filterRepo) {
-      return false
-    }
-    if (filterAction !== "all" && event.action !== filterAction) {
-      return false
-    }
-    return true
-  })
+  const filtered = useMemo(() => {
+    return activity.filter((event) => {
+      if (filterRepo !== "all" && `${event.repository.owner}/${event.repository.name}` !== filterRepo) {
+        return false
+      }
+      if (filterAction !== "all" && event.action !== filterAction) {
+        return false
+      }
+      if (dateRange?.from) {
+        const eventDate = new Date(event.timestamp)
+        const rangeFrom = startOfDay(dateRange.from)
+        const rangeTo = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from)
+        if (!isWithinInterval(eventDate, { start: rangeFrom, end: rangeTo })) {
+          return false
+        }
+      }
+      return true
+    })
+  }, [activity, filterRepo, filterAction, dateRange])
 
-  const trusted = activity.filter((e) => e.action === "labeled_trusted").length
-  const flagged = activity.filter((e) => e.action === "flagged").length
-  const autoClosed = activity.filter((e) => e.action === "auto_closed").length
-  const whitelisted = activity.filter((e) => e.action === "whitelisted").length
+  const trusted = filtered.filter((e) => e.action === "labeled_trusted").length
+  const flagged = filtered.filter((e) => e.action === "flagged").length
+  const autoClosed = filtered.filter((e) => e.action === "auto_closed").length
+  const whitelisted = filtered.filter((e) => e.action === "whitelisted").length
+
+  const dateRangeLabel = useMemo(() => {
+    if (!dateRange?.from) return null
+    if (!dateRange.to || format(dateRange.from, "MMM d") === format(dateRange.to, "MMM d")) {
+      return format(dateRange.from, "MMM d, yyyy")
+    }
+    if (dateRange.from.getFullYear() === dateRange.to.getFullYear()) {
+      return `${format(dateRange.from, "MMM d")} – ${format(dateRange.to, "MMM d, yyyy")}`
+    }
+    return `${format(dateRange.from, "MMM d, yyyy")} – ${format(dateRange.to, "MMM d, yyyy")}`
+  }, [dateRange])
+
+  const handleExport = useCallback(() => {
+    downloadCsv(filtered)
+  }, [filtered])
 
   return (
     <div className="space-y-6">
@@ -141,11 +208,30 @@ export function ActivityFeed({
             <SelectItem value="whitelisted">Whitelisted</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs rounded-md">
-          <Calendar className="h-3 w-3" />
-          Date Range
-        </Button>
-        <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs rounded-md">
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={`gap-1.5 h-8 text-xs rounded-md ${dateRange ? "border-primary/50 bg-primary/5" : ""}`}
+            >
+              <Calendar className="h-3 w-3" />
+              {dateRangeLabel ?? "Date Range"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-[280px] p-3">
+            <DateRangeCalendar value={dateRange} onChange={setDateRange} />
+          </PopoverContent>
+        </Popover>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 h-8 text-xs rounded-md"
+          onClick={handleExport}
+          disabled={filtered.length === 0}
+        >
           <Download className="h-3 w-3" />
           Export
         </Button>
