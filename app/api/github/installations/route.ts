@@ -151,28 +151,37 @@ export async function GET() {
 
   const results = await Promise.all(
     appInstallations.map(async (inst) => {
-      const reposRes = await fetch(
-        `https://api.github.com/user/installations/${inst.id}/repositories?per_page=100`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-          },
-        }
-      );
-
-      let repos: {
+      type Repo = {
         id: number;
         name: string;
         full_name: string;
         owner: { login: string };
         private: boolean;
-      }[] = [];
+      };
 
-      if (reposRes.ok) {
+      let repos: Repo[] = [];
+      let page = 1;
+
+      while (true) {
+        const reposRes = await fetch(
+          `https://api.github.com/user/installations/${inst.id}/repositories?per_page=100&page=${page}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          }
+        );
+
+        if (!reposRes.ok) break;
+
         const repoData = await reposRes.json();
-        repos = repoData.repositories ?? [];
+        const batch: Repo[] = repoData.repositories ?? [];
+        repos.push(...batch);
+
+        if (batch.length < 100) break;
+        page++;
       }
 
       return {
