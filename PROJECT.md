@@ -77,28 +77,3 @@ A web dashboard where maintainers log in with **GitHub OAuth** and:
 | GitHub Integration | GitHub App (webhooks), `octokit` (REST API) |
 | Package Manager | Bun |
 
-## Repo Structure
-
-```
-github-ai-stop/
-├── PROJECT.md              # This file
-└── apps/
-    └── frontend/           # Next.js app — dashboard, API routes, scoring engine
-        ├── app/
-        │   ├── api/        # Route Handlers (webhooks, scoring, settings)
-        │   ├── dashboard/  # Maintainer dashboard pages
-        │   ├── login/
-        │   ├── layout.tsx
-        │   └── page.tsx
-        ├── lib/            # Shared utilities, scoring logic, DB client
-        ├── package.json
-        ├── tsconfig.json
-        └── next.config.ts
-```
-
-## Current Status
-
-- **Dashboard:** Scaffolded with Next.js 16 + Tailwind 4. Landing page, login page, and dashboard pages (overview, repositories, contributors, activity) built with mock data.
-- **API Routes:** Not yet created. Needs webhook handler (`/api/webhooks/github`), scoring engine, and settings endpoints.
-- **Database:** Turso selected but not yet integrated. Needs schema design, `@libsql/client` setup, and migration from mock data.
-- **GitHub App:** Not yet registered. Needs app manifest, webhook endpoint configuration, and OAuth setup.
