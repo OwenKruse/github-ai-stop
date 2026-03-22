@@ -4,6 +4,8 @@ import { getRepositories } from "@/lib/db/queries"
 import { cn } from "@/lib/utils"
 import { InstallOnRepoButton } from "./install-on-repo"
 
+export const dynamic = "force-dynamic"
+
 export default async function RepositoriesPage() {
   const repos = await getRepositories()
 

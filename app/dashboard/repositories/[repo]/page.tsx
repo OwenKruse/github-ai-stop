@@ -7,6 +7,8 @@ import { RepoSettings } from "./repo-settings"
 import { RepoWhitelist } from "./repo-whitelist"
 import { RepoPRList } from "./repo-pr-list"
 
+export const dynamic = "force-dynamic"
+
 export default async function RepositoryDetailPage({ params }: { params: Promise<{ repo: string }> }) {
   const { repo: repoId } = await params
   const id = parseInt(repoId, 10)

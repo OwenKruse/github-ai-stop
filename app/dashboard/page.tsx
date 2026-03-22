@@ -18,6 +18,8 @@ import {
 } from "@/lib/db/queries"
 import { DashboardCharts } from "./dashboard-charts"
 
+export const dynamic = "force-dynamic"
+
 export default async function DashboardPage() {
   const [stats, prVolume, spamTrend, trustDist, activity] = await Promise.all([
     getDashboardStats(),
