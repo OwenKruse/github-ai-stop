@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, accounts, sessions } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
 
 export async function GET() {
@@ -70,4 +70,19 @@ export async function PATCH(req: NextRequest) {
     email: updated.email,
     image: updated.image,
   });
+}
+
+export async function DELETE() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userId = session.user.id;
+
+  await db.delete(sessions).where(eq(sessions.userId, userId));
+  await db.delete(accounts).where(eq(accounts.userId, userId));
+  await db.delete(users).where(eq(users.id, userId));
+
+  return NextResponse.json({ ok: true });
 }

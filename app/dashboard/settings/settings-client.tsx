@@ -2,11 +2,21 @@
 
 import { useState } from "react"
 import { signOut } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   Shield,
   Bell,
@@ -14,11 +24,13 @@ import {
   LogOut,
   Check,
   Palette,
+  Trash2,
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
 export function SettingsClient() {
   const { theme, setTheme } = useTheme()
+  const router = useRouter()
 
   const [defaultThreshold, setDefaultThreshold] = useState(65)
   const [defaultAutoClose, setDefaultAutoClose] = useState(true)
@@ -31,6 +43,9 @@ export function SettingsClient() {
   const [protectionSaved, setProtectionSaved] = useState(false)
   const [notifSaved, setNotifSaved] = useState(false)
 
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
   function handleSaveProtection() {
     setProtectionSaved(true)
     setTimeout(() => setProtectionSaved(false), 2000)
@@ -39,6 +54,19 @@ export function SettingsClient() {
   function handleSaveNotifications() {
     setNotifSaved(true)
     setTimeout(() => setNotifSaved(false), 2000)
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true)
+    try {
+      const res = await fetch("/api/user", { method: "DELETE" })
+      if (res.ok) {
+        await signOut({ redirectTo: "/" })
+      }
+    } finally {
+      setDeleting(false)
+      setDeleteOpen(false)
+    }
   }
 
   return (
@@ -232,6 +260,49 @@ export function SettingsClient() {
                 <LogOut className="h-3.5 w-3.5" />
                 Sign Out
               </Button>
+            </div>
+
+            <div className="border-t border-destructive/30" />
+
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">Delete account data</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Permanently remove your account and all associated data from GitGuard. This cannot be undone.
+                </p>
+              </div>
+              <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-md gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30 shrink-0"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete Account
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Delete account data</DialogTitle>
+                    <DialogDescription>
+                      Are you sure? This will permanently delete your GitGuard account, sessions, and linked OAuth credentials. Your repositories and their activity history will not be affected.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDeleteAccount}
+                      disabled={deleting}
+                    >
+                      {deleting ? "Deleting..." : "Delete Account"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>

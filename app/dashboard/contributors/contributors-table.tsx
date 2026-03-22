@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { Search, ArrowUpDown, CheckCircle2, XCircle, ExternalLink, MoreHorizontal, ShieldCheck, ShieldBan, ShieldOff } from "lucide-react"
+import { Search, ArrowUpDown, CheckCircle2, XCircle, ExternalLink, MoreHorizontal, ShieldCheck, ShieldBan, ShieldOff, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ContributorRow {
@@ -39,6 +39,19 @@ export function ContributorsTable({ contributors: initialContributors }: { contr
   const [sortKey, setSortKey] = useState<SortKey>("trustScore")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [updating, setUpdating] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+
+  async function handleRefreshScores() {
+    setRefreshing(true)
+    try {
+      const res = await fetch("/api/contributors/refresh", { method: "POST" })
+      if (res.ok) {
+        router.refresh()
+      }
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   async function handleToggleWhitelist(contributor: ContributorRow) {
     const newValue = !contributor.isWhitelisted
@@ -148,14 +161,26 @@ export function ContributorsTable({ contributors: initialContributors }: { contr
         </div>
       </div>
 
-      <div className="relative w-full max-w-xs">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-        <Input
-          placeholder="Search contributors..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-8 h-8 text-sm rounded-md"
-        />
+      <div className="flex items-center gap-3">
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search contributors..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 h-8 text-sm rounded-md"
+          />
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 text-xs"
+          onClick={handleRefreshScores}
+          disabled={refreshing}
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
+          {refreshing ? "Refreshing…" : "Refresh Scores"}
+        </Button>
       </div>
 
       <div className="rounded-md border border-border bg-card">

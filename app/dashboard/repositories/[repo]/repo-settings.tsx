@@ -1,23 +1,38 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { AlertTriangle, Trash2 } from "lucide-react"
 
 interface RepoSettingsProps {
   repoId: number
+  repoName: string
   trustThreshold: number
   autoClose: boolean
   autoLabel: boolean
 }
 
-export function RepoSettings({ repoId, trustThreshold, autoClose, autoLabel }: RepoSettingsProps) {
+export function RepoSettings({ repoId, repoName, trustThreshold, autoClose, autoLabel }: RepoSettingsProps) {
+  const router = useRouter()
   const [threshold, setThreshold] = useState(trustThreshold)
   const [close, setClose] = useState(autoClose)
   const [label, setLabel] = useState(autoLabel)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   async function handleSave() {
     setSaving(true)
@@ -33,6 +48,19 @@ export function RepoSettings({ repoId, trustThreshold, autoClose, autoLabel }: R
       })
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/repositories/${repoId}`, { method: "DELETE" })
+      if (res.ok) {
+        router.push("/dashboard/repositories")
+      }
+    } finally {
+      setDeleting(false)
+      setDeleteOpen(false)
     }
   }
 
@@ -85,6 +113,59 @@ export function RepoSettings({ repoId, trustThreshold, autoClose, autoLabel }: R
           <Button size="sm" className="rounded-md" onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Changes"}
           </Button>
+        </div>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="rounded-md border border-destructive/30 bg-card mt-6">
+        <div className="p-4 border-b border-destructive/30">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <h3 className="text-sm font-semibold text-destructive">Danger Zone</h3>
+          </div>
+        </div>
+
+        <div className="p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">Remove this repository</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Delete all GitGuard data for this repository, including activity history. This cannot be undone.
+              </p>
+            </div>
+            <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-md gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30 shrink-0"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remove
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Remove repository</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to remove <span className="font-semibold text-foreground">{repoName}</span>? All activity events and settings for this repository will be permanently deleted.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                  >
+                    {deleting ? "Removing..." : "Remove Repository"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
     </div>

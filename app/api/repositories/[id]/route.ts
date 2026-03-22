@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { repositories } from "@/lib/db/schema";
+import { repositories, activityEvents } from "@/lib/db/schema";
 import { auth } from "@/lib/auth";
 
 export async function PATCH(
@@ -48,4 +48,35 @@ export async function PATCH(
   }
 
   return NextResponse.json(updated);
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const repoId = parseInt(id, 10);
+  if (isNaN(repoId)) {
+    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+  }
+
+  await db
+    .delete(activityEvents)
+    .where(eq(activityEvents.repositoryId, repoId));
+
+  const [deleted] = await db
+    .delete(repositories)
+    .where(eq(repositories.id, repoId))
+    .returning();
+
+  if (!deleted) {
+    return NextResponse.json({ error: "Repository not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true });
 }

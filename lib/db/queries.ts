@@ -313,6 +313,32 @@ export async function searchContributors(query: string) {
   }));
 }
 
+// ---------- Platform Stats (landing page) ----------
+
+export async function getPlatformStats() {
+  const [eventStats] = await db
+    .select({
+      totalEvents: count(),
+      spamBlocked: sql<number>`sum(case when ${activityEvents.action} in ('flagged','auto_closed') then 1 else 0 end)`,
+    })
+    .from(activityEvents);
+
+  const [repoStats] = await db
+    .select({ count: count() })
+    .from(repositories);
+
+  const [contributorStats] = await db
+    .select({ count: count() })
+    .from(contributors);
+
+  return {
+    totalPRs: eventStats?.totalEvents ?? 0,
+    spamBlocked: eventStats?.spamBlocked ?? 0,
+    totalRepos: repoStats?.count ?? 0,
+    totalContributors: contributorStats?.count ?? 0,
+  };
+}
+
 export async function getWhitelistedContributors() {
   const rows = await db
     .select()

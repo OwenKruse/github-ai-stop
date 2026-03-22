@@ -45,6 +45,7 @@ export default async function RepositoryDetailPage({ params }: { params: Promise
 
       <RepoSettings
         repoId={repository.id}
+        repoName={repository.fullName}
         trustThreshold={repository.trustThreshold}
         autoClose={repository.autoClose}
         autoLabel={repository.autoLabel}
