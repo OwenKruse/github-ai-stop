@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: 40 14% 98%;
+  --foreground: 40 6% 16%;
+  --card: 0 0% 100%;
+  --card-foreground: 40 6% 16%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 40 6% 16%;
+  --primary: 40 6% 16%;
+  --primary-foreground: 40 14% 98%;
+  --secondary: 40 6% 95%;
+  --secondary-foreground: 40 6% 16%;
+  --muted: 40 6% 95%;
+  --muted-foreground: 40 4% 53%;
+  --accent: 40 6% 95%;
+  --accent-foreground: 40 6% 16%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 36 6% 90%;
+  --input: 36 6% 90%;
+  --ring: 40 6% 16%;
+  --radius: 0.375rem;
+  --chart-1: 142 60% 40%;
+  --chart-2: 36 80% 56%;
+  --chart-3: 217 70% 53%;
+  --chart-4: 0 70% 56%;
+  --chart-5: 270 50% 55%;
+  --sidebar: 40 14% 98%;
+  --sidebar-foreground: 40 6% 16%;
+  --sidebar-primary: 40 6% 16%;
+  --sidebar-primary-foreground: 40 14% 98%;
+  --sidebar-accent: 40 8% 94%;
+  --sidebar-accent-foreground: 40 6% 16%;
+  --sidebar-border: 36 6% 90%;
+  --sidebar-ring: 40 6% 16%;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius: var(--radius);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --color-notion-brown: #937264;
+  --color-notion-orange: #D9730D;
+  --color-notion-yellow: #CB912F;
+  --color-notion-green: #448361;
+  --color-notion-blue: #337EA9;
+  --color-notion-purple: #9065B0;
+  --color-notion-pink: #C14C8A;
+  --color-notion-red: #D44C47;
+
+  --color-notion-bg-brown: #F3EEEE;
+  --color-notion-bg-orange: #FAEBDD;
+  --color-notion-bg-yellow: #FBF3DB;
+  --color-notion-bg-green: #DDEDEA;
+  --color-notion-bg-blue: #DDEBF1;
+  --color-notion-bg-purple: #EAE4F2;
+  --color-notion-bg-pink: #F4DFEB;
+  --color-notion-bg-red: #FDDEDE;
+  --color-notion-bg-gray: #F1F1EF;
+}
+
+.dark {
+  --background: 30 3% 11%;
+  --foreground: 36 7% 88%;
+  --card: 30 4% 14%;
+  --card-foreground: 36 7% 88%;
+  --popover: 30 4% 14%;
+  --popover-foreground: 36 7% 88%;
+  --primary: 36 7% 88%;
+  --primary-foreground: 30 3% 11%;
+  --secondary: 30 3% 18%;
+  --secondary-foreground: 36 7% 88%;
+  --muted: 30 3% 18%;
+  --muted-foreground: 36 4% 55%;
+  --accent: 30 3% 18%;
+  --accent-foreground: 36 7% 88%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 30 3% 22%;
+  --input: 30 3% 22%;
+  --ring: 36 7% 88%;
+  --chart-1: 142 55% 45%;
+  --chart-2: 36 70% 56%;
+  --chart-3: 217 65% 58%;
+  --chart-4: 0 65% 58%;
+  --chart-5: 270 45% 60%;
+  --sidebar: 30 3% 11%;
+  --sidebar-foreground: 36 7% 88%;
+  --sidebar-primary: 36 7% 88%;
+  --sidebar-primary-foreground: 30 3% 11%;
+  --sidebar-accent: 30 3% 18%;
+  --sidebar-accent-foreground: 36 7% 88%;
+  --sidebar-border: 30 3% 22%;
+  --sidebar-ring: 36 7% 88%;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+}
